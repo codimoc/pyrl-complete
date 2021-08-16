@@ -130,3 +130,5 @@ dmypy.json
 
 # eclipse
 .project
+/parser.out
+/parsetab.py
