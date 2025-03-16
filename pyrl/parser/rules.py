@@ -92,6 +92,8 @@ def p_line(p):
 
 def p_path(p):
     ''' path : wrdopt
+             | alternatives
+             | collection
              | path wrdopt
              | path collection
              | path alternatives

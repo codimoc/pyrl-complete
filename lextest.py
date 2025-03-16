@@ -3,7 +3,7 @@ import ply.yacc as yacc
 from pyrl.parser import clear,paths, rules
 
 # Test it out
-data = '''test zero
+data = '''test | zero
           get zero (one | (two | three) )
           set (one | two) | zero
           get -h | (-d <domain> -a <access> )
