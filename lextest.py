@@ -1,6 +1,6 @@
 import ply.lex as lex
 import ply.yacc as yacc
-from pyrl.parser import clear,paths, rules
+from pyrl_complete.parser import clear, paths, rules
 
 # Test it out
 data = '''test | zero

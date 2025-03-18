@@ -3,9 +3,10 @@ Lexer and Parser rules
 """
 from typing import List
 
-Paths = List[List[str]]  #definition of a partial path in the command line, e.g. [["one", "two"]]
+Paths = List[List[str]]  # definition of a partial path in the command line, e.g. [["one", "two"]]
 
-def merge(l1:Paths, l2:Paths)-> Paths:
+
+def merge(l1: Paths, l2: Paths) -> Paths:
     '''
     l1 and l2 are list of partial paths. Each element is a list or partial set of tokens
     This function performs a cartesian product from the two list and each element in the product

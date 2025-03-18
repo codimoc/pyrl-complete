@@ -1,4 +1,4 @@
-from pyrl.parser import clear,paths, rules
+from pyrl_complete.parser import clear, paths, rules
 import ply.lex as lex
 import ply.yacc as yacc
 import pytest

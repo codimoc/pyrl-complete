@@ -1,0 +1,20 @@
+[project]
+name = "pyrl-complete"
+version = "0.1.0"
+description = "manage readline autocomplete for bespoke cli"
+authors = [
+    {name = "codimoc",email = "codimoc@prismoid.uk"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ply (>=3.11,<4.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.test.dependencies]  
+pytest = "^8.2.0"  
