@@ -67,3 +67,29 @@ def test_three_tokens_three_paths_one_optional_group(parser: yacc):
     assert paths()[0] == ["get", "one"]
     assert paths()[1] == ["test", "one"]
     assert paths()[2] == ["one"]
+
+def test_two_groups(parser: yacc):
+    parser.parse("(one | two | three) [get | test];")
+    assert len(paths()) == 9
+    assert paths()[0] == ["one", "get"]
+    assert paths()[1] == ["one", "test"]
+    assert paths()[2] == ["one"]
+    assert paths()[3] == ["two", "get"]
+    assert paths()[4] == ["two", "test"]
+    assert paths()[5] == ["two"]
+    assert paths()[6] == ["three", "get"]
+    assert paths()[7] == ["three", "test"]
+    assert paths()[8] == ["three"]
+    #now change the order
+    clear()
+    parser.parse("[get | test] (one | two | three);")
+    assert len(paths()) == 9
+    assert paths()[0] == ["get", "one"]
+    assert paths()[1] == ["get", "two"]
+    assert paths()[2] == ["get","three"]
+    assert paths()[3] == ["test","one"]
+    assert paths()[4] == ["test","two"]
+    assert paths()[5] == ["test","three"]
+    assert paths()[6] == ["one"]
+    assert paths()[7] == ["two"]
+    assert paths()[8] == ["three"]
