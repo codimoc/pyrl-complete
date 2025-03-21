@@ -8,3 +8,6 @@ def clear():
 
 def paths() -> Paths:
     return rules.paths
+
+
+# TODO: create a bespoke parse that wraps yacc and manages its paths

@@ -3,6 +3,7 @@ Lexer and Parser rules
 """
 
 from typing import List
+import re
 
 Paths = List[
     List[str]
@@ -61,10 +62,12 @@ def t_WORD(t):
     return t  # t is a token, its value is a Paths object
 
 
-# TODO: change the pattern <...? into a new token ANY
 def t_OPTION(t):
-    r"-[a-zA-Z]{1}(\s+\<.+?\>)?"  # an optional argument like: -d <something>
-    t.value = [[t.value]]
+    r"-[a-zA-Z]{1}(\s*\?+)?"  # an optional argument like: -d ?
+    token = re.sub(r"\?+", "?", t.value)  # remove redundant ?
+    # now format with one space between option letter and ?
+    token = re.sub(r"(-[a-zA-Z]{1})\s*(\?+)", "\\1 \\2", token)
+    t.value = [[token]]
     return t
 
 

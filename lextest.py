@@ -6,7 +6,7 @@ from pyrl_complete.parser import clear, paths, rules
 data = """test | zero
           get zero (one | (two | three) )
           set (one | two) | zero
-          get -h | (-d <domain> -a <access> )
+          get -h | (-d ? -a ? )
           test [first | second]
        """
 

@@ -61,6 +61,7 @@ def test_three_tokens_two_paths_one_group(parser: yacc):
     assert len(paths()) == 2
     assert paths()[0] == ["get", "one"]
     assert paths()[1] == ["test", "one"]
+    # assert ["test", "one"] in paths()
 
 
 def test_three_tokens_three_paths_one_optional_group(parser: yacc):
@@ -103,3 +104,37 @@ def test_two_groups(parser: yacc):
     assert paths()[6] == ["one"]
     assert paths()[7] == ["two"]
     assert paths()[8] == ["three"]
+
+
+def test_option_with_arg(parser: yacc):
+    parser.parse("get -d ? -a ?;")
+    assert len(paths()) == 1
+    assert ["get", "-d ?", "-a ?"] in paths()
+    # now without spaces between option letter and ?
+    clear()
+    parser.parse("get -d? -a?;")
+    assert len(paths()) == 1
+    assert ["get", "-d ?", "-a ?"] in paths()
+    # now with redundant ?
+    clear()
+    parser.parse("get -d ?? -a ??;")
+    assert len(paths()) == 1
+    assert ["get", "-d ?", "-a ?"] in paths()
+
+
+def test_options_with_and_without_arg(parser: yacc):
+    parser.parse("get -h | (-d ? -a ?);")
+    assert len(paths()) == 2
+    assert ["get", "-d ?", "-a ?"] in paths()
+    assert ["get", "-h"] in paths()
+
+
+def test_multi_lines(parser: yacc):
+    data = """test | zero
+            get zero (one | (two | three) )
+            set (one | two) | zero
+            get -h | (-d ? -a ? )
+            test [first | second]
+        """
+    parser.parse(data)
+    assert len(paths()) == 13
