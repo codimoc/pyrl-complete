@@ -1,5 +1,9 @@
 from . import rules
 from .rules import Paths
+from . import parser
+
+# redefinition to simplify namespace
+Parser = parser.Parser
 
 
 def clear():
@@ -8,6 +12,3 @@ def clear():
 
 def paths() -> Paths:
     return rules.paths
-
-
-# TODO: create a bespoke parse that wraps yacc and manages its paths
