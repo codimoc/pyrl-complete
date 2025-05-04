@@ -6,6 +6,7 @@ from . import tree
 # redefinition to simplify namespace
 Parser = parser.Parser
 Node = tree.Node
+Tree = tree.Tree
 
 
 def clear():
