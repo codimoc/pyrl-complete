@@ -32,14 +32,19 @@ class Node:
 
     def suggestions(self) -> List[str]:
         "Returns the suggestion at for this node"
-        return [n.name for n in self.children]
+        return [n for n in self.children.keys()]
 
     def regexp(self) -> str:
         if self.name == "root":
-            return "^"
+            return "^$"
         name = self.name
         # TODO: substitute ? with \w+
-        return f"{self.parent.regexp()}\s+{name}"
+        if self.parent.name == "root":
+            return f"^.*{name}$"
+        return f"{self.parent.regexp()[:-1]}\\s+{name}$"
+
+    def matches(self, input: str) -> bool:
+        return re.match(self.regexp(), input) is not None
 
 
 class Tree:
@@ -49,7 +54,14 @@ class Tree:
         self.root = root
         self.cache = {}  # a map from partial string input to Node
 
-    def find_node(self, input: str) -> Node:
-        node = self.root
+    def find_node(self, node: Node, input: str) -> Node:
         if input in self.cache:
             return self.cache[input]
+        if node.matches(input):
+            self.cache[input] = node
+            return node
+        for n in node.children.values():
+            node = self.find_node(n, input)
+            if node is not None:
+                return node
+        return None

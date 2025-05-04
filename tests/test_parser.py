@@ -15,4 +15,3 @@ def test_clear(my_parser: Parser):
     assert len(paths()) == 1
     clear()
     assert len(paths()) == 0
-
