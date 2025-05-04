@@ -1,4 +1,5 @@
 from pyrl_complete.parser import Parser
+from pyrl_complete.parser.rules import merge
 import pytest
 
 
@@ -128,3 +129,29 @@ def test_multi_lines(my_parser: Parser):
         """
     my_parser.parse(data)
     assert len(my_parser.paths) == 13
+
+
+# --- Tests for merge function ---
+
+
+def test_merge_empty():
+    assert merge([], []) == []
+    assert merge([["a"]], []) == [["a"]]
+    assert merge([], [["b"]]) == [["b"]]
+    assert merge(None, [["b"]]) == [["b"]]
+    assert merge([["a"]], None) == [["a"]]
+    assert merge(None, None) == None  # Based on current implementation
+
+
+def test_merge_simple():
+    l1 = [["a"], ["b"]]
+    l2 = [["1"], ["2"]]
+    expected = [["a", "1"], ["a", "2"], ["b", "1"], ["b", "2"]]
+    assert merge(l1, l2) == expected
+
+
+def test_merge_complex():
+    l1 = [["a", "b"], ["c"]]
+    l2 = [["1", "2"]]
+    expected = [["a", "b", "1", "2"], ["c", "1", "2"]]
+    assert merge(l1, l2) == expected
