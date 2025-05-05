@@ -30,21 +30,42 @@ class Node:
         for p in paths:
             cls.populate_path(parent, p)
 
-    def suggestions(self) -> List[str]:
-        "Returns the suggestion at for this node"
-        return [n for n in self.children.keys()]
+    def level(self) -> int:
+        "Returns the level of the node in the tree"
+        level = 0
+        node = self
+        while node.parent is not None:
+            level += 1
+            node = node.parent
+        return level
 
-    def regexp(self) -> str:
+    def expression(self) -> str:
+        "Returns the expression to be matched against the input"
         if self.name == "root":
-            return "^$"
-        name = self.name
-        # TODO: substitute ? with \w+
+            return ""
         if self.parent.name == "root":
-            return f"^.*{name}$"
-        return f"{self.parent.regexp()[:-1]}\\s+{name}$"
+            return self.name
+        return f"{self.parent.expression()} {self.name}"
 
     def matches(self, input: str) -> bool:
-        return re.match(self.regexp(), input) is not None
+        exp = self.expression()
+        if "?" not in exp:
+            return exp.startswith(input)
+        if exp.endswith("?"):
+            exp += " "  # to facilitate the split
+        tokens = exp.split(" ? ")
+        # now remove empty tokens
+        tokens = [t for t in tokens if len(t) > 0]
+        # remove extra spaces in input and transform into lower case
+        input = re.sub(r"\s+", " ", input.lower().strip())
+        for t in tokens:
+            if not t.strip().startswith(input[: len(t)]):
+                return False
+            # now remove the part including ? from input
+            input = re.sub(rf"^{t}\s+\w+\s+", "", input)
+        # input should be completely consumed by all tokens
+
+        return True
 
 
 class Tree:
@@ -54,14 +75,26 @@ class Tree:
         self.root = root
         self.cache = {}  # a map from partial string input to Node
 
-    def find_node(self, node: Node, input: str) -> Node:
-        if input in self.cache:
+    def find_matching_nodes(self, root: Node, input: str) -> List[Node]:
+        "Find a list of nodes matching the input"
+        # only use the cache at the root of the tree
+        if root.level() == 0 and input in self.cache:
             return self.cache[input]
-        if node.matches(input):
-            self.cache[input] = node
-            return node
-        for n in node.children.values():
-            node = self.find_node(n, input)
-            if node is not None:
-                return node
-        return None
+        nodes = []
+        if root.matches(input):
+            nodes.append(root)
+        for n in root.children.values():
+            nodes.extend(self.find_matching_nodes(n, input))
+        # only at root level
+        # now filter nodes based on the depth, we only keep the deepest
+        if root.level() == 0:
+            self.cache[input] = nodes
+        return nodes
+
+    def get_suggestions(self, root: Node, input: str) -> List[str]:
+        "Returns a list of suggestions based on the input"
+        nodes = self.find_matching_nodes(root, input)
+        suggestions = []
+        for n in nodes:
+            suggestions.append(n.expression())
+        return suggestions

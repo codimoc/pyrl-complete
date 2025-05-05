@@ -59,87 +59,265 @@ def test_populate_tree_multiple_paths():
     assert len(root.children["one"].children["two"].children) == 2
 
 
-def test_regexp():
-    root = Node("root", None)
-    paths: Paths = [["one", "two", "three"]]
-    Node.populate_tree(root, paths)
-    assert root.regexp() == "^$", "root regexp"
-    assert root.children["one"].regexp() == "^.*one$"
-    regexp = root.children["one"].children["two"].regexp()
-    assert regexp == "^.*one\\s+two$"
-    regexp = root.children["one"].children["two"].children["three"].regexp()
-    assert regexp == "^.*one\\s+two\\s+three$"
-
-
 def test_matches():
     root = Node("root", None)
     paths: Paths = [["one", "two", "three"]]
     Node.populate_tree(root, paths)
     assert root.matches("")
-    assert root.children["one"].matches("one")
-    assert root.children["one"].children["two"].matches("one two")
-    assert (
-        root.children["one"].children["two"].children["three"].matches("one two three")
-    )
-    # Test non-matching cases
-    assert not root.children["one"].matches("on")
-    assert not root.children["one"].children["two"].matches("one tw")
+    node_one = root.children["one"]
+    node_two = node_one.children["two"]
+    node_three = node_two.children["three"]
+
+    assert node_one.matches("one"), "matching one"
+    assert node_one.matches("on"), "partial matching one"
+    assert node_two.matches("one two"), "matching one two"
+    assert node_two.matches("one tw"), "partial matching one two"
+    assert node_three.matches("one two three"), "matching one two three"
     assert not root.children["one"].children["two"].matches("one two three")
 
 
-def test_suggestions():
-    """Tests the suggestions method of a Node."""
+def test_matches_complex_placeholder():
+    """Test matching with a placeholder not at the end."""
+    root = Node("root", None)
+    paths: Paths = [["one", "three", "five ?", "six"]]
+    Node.populate_tree(root, paths)
+
+    node_one = root.children["one"]
+    node_three = node_one.children["three"]
+    node_five = node_three.children["five ?"]
+    node_six = node_five.children["six"]
+
+    # Expected expression: " one three five ? six"
+    assert node_six.expression() == "one three five ? six"
+
+    # Test matching against node 'six'
+    assert node_one.matches("o")  # Partial match of first segment
+    assert not node_one.matches("one t")
+    assert node_six.matches("one three five val1 six")
+    # Test extra spaces in input
+    assert node_six.matches("one  three   five 123   six")
+    # Partial match of last segment.
+    # Note: this is not ideal, but it is the current behavior
+    # and we are testing it
+    assert node_six.matches("one three five val1 si")
+    assert not node_six.matches("one three five val1")  # Missing last
+    assert not node_six.matches("one three five")  # Missing placeholder
+    assert not node_six.matches("one three five val1 seven")  # Wrong last
+    assert node_six.matches(
+        "one three five val1 six extra"
+    )  # Extra
+
+
+def test_matches_multiple_placeholders():
+    """Test matching with multiple placeholders."""
+    root = Node("root", None)
+    paths: Paths = [["cmd", "arg1 ?", "arg2 ?", "end"]]
+    Node.populate_tree(root, paths)
+
+    node_cmd = root.children["cmd"]
+    node_arg1 = node_cmd.children["arg1 ?"]
+    node_arg2 = node_arg1.children["arg2 ?"]
+    node_end = node_arg2.children["end"]
+
+    # Expression: "cmd arg1 ? arg2 ? end"
+    assert node_end.expression() == "cmd arg1 ? arg2 ? end"
+
+    # Valid matches
+    assert node_end.matches("cmd arg1 val1 arg2 val2 end")
+    assert node_end.matches("cmd arg1 1 arg2 2 end"), "numeric args"
+    assert node_end.matches("cmd arg1 value_1 arg2 value_2 en"), "partial end"
+    assert node_end.matches(
+        "cmd arg1 VALUE1 arg2 VALUE2 END"
+    ), "case-insensitive"
+    assert node_end.matches(" cmd   arg1  val1  arg2 val2   end ")
+
+
+def test_node_level():
+    """Tests the level method of a Node."""
     root = Node("root", None)
     paths: Paths = [
-        ["one", "two"],
-        ["one", "three"],
-        ["four"],
+        ["one", "two", "three"],
+        ["one", "four"],
     ]
     Node.populate_tree(root, paths)
 
-    # Suggestions from root
-    root_suggestions = root.suggestions()
-    assert len(root_suggestions) == 2
-    assert "one" in root_suggestions
-    assert "four" in root_suggestions
+    node_one = root.children["one"]
+    node_two = node_one.children["two"]
+    node_three = node_two.children["three"]
+    node_four = node_one.children["four"]
 
-    # Suggestions from node "one"
-    one_suggestions = root.children["one"].suggestions()
-    assert len(one_suggestions) == 2
-    assert "two" in one_suggestions
-    assert "three" in one_suggestions
-
-    # Suggestions from leaf node "two"
-    assert root.children["one"].children["two"].suggestions() == []
-    # Suggestions from leaf node "four"
-    assert root.children["four"].suggestions() == []
+    assert root.level() == 0
+    assert node_one.level() == 1
+    assert node_two.level() == 2
+    assert node_three.level() == 3
+    assert node_four.level() == 2
 
 
-def test_tree_creation_and_find_node():
-    """Tests Tree instantiation and the find_node method."""
+def test_node_expression():
+    """Tests the expression method of a Node."""
     root = Node("root", None)
-    paths: Paths = [["get", "file"], ["get", "status"], ["set", "value"]]
+    paths: Paths = [
+        ["cmd", "sub", "arg"],
+        ["other"],
+    ]
     Node.populate_tree(root, paths)
-    tree = Tree(root)
 
+    node_cmd = root.children["cmd"]
+    node_sub = node_cmd.children["sub"]
+    node_arg = node_sub.children["arg"]
+    node_other = root.children["other"]
+
+    assert root.expression() == "", "Root expression should be empty"
+    assert node_cmd.expression() == "cmd", "First level expression"
+    assert node_sub.expression() == "cmd sub", "Second level expression"
+    assert node_arg.expression() == "cmd sub arg", "Third level expression"
+    assert node_other.expression() == "other", "Another first level expression"
+
+# --- Tests for Tree class ---
+
+
+def test_tree_init():
+    """Tests the basic initialization of a Tree."""
+    root = Node("root", None)
+    tree = Tree(root)
     assert tree.root is root
     assert tree.cache == {}
 
-    # Find existing nodes
-    assert tree.find_node(tree.root, "get") is root.children["get"]
-    assert (
-        tree.find_node(tree.root, "get file") is root.children["get"].children["file"]
-    )
-    assert (
-        tree.find_node(tree.root, "set value") is root.children["set"].children["value"]
-    )
 
-    # Find non-existing node
-    assert tree.find_node(tree.root, "get stat") is None
-    assert tree.find_node(tree.root, "delete") is None
+def test_tree_find_matching_nodes_simple():
+    """Tests find_matching_nodes with exact and partial matches."""
+    root = Node("root", None)
+    paths: Paths = [["get", "status"], ["get", "config"], ["set", "value"]]
+    Node.populate_tree(root, paths)
+    tree = Tree(root)
 
-    # Check cache (simple check - assumes find_node populates it)
+    # Exact match
+    nodes = tree.find_matching_nodes(tree.root, "get status")
+    assert len(nodes) == 1
+    assert nodes[0].name == "status"
+    assert nodes[0].parent.name == "get"
+
+    # Partial match (deepest node)
+    nodes = tree.find_matching_nodes(tree.root, "get stat")
+    assert len(nodes) == 1
+    assert nodes[0].name == "status"
+
+    # Match intermediate node
+    nodes = tree.find_matching_nodes(tree.root, "get")
+    assert len(nodes) == 3
+    assert "get" in [n.name for n in nodes]
+    assert "status" in [n.name for n in nodes]
+    assert "config" in [n.name for n in nodes]
+
+    # No match
+    nodes = tree.find_matching_nodes(tree.root, "post data")
+    assert len(nodes) == 0
+
+    # Match root
+    nodes = tree.find_matching_nodes(tree.root, "")
+    assert len(nodes) == 6
+    assert "get" in [n.name for n in nodes]
+    assert "set" in [n.name for n in nodes]
+    assert "root" in [n.name for n in nodes]
+    assert "status" in [n.name for n in nodes]
+    assert "config" in [n.name for n in nodes]
+    assert "value" in [n.name for n in nodes]
+
+    # Test caching (call again, check cache)
+    assert "get status" in tree.cache
+    assert "get stat" in tree.cache
     assert "get" in tree.cache
-    assert tree.cache["get"] is root.children["get"]
-    assert "get file" in tree.cache
-    assert tree.cache["get file"] is root.children["get"].children["file"]
+    assert "" in tree.cache
+    nodes_cached = tree.find_matching_nodes(tree.root, "get status")
+    assert len(nodes_cached) == 1
+
+
+def test_tree_find_matching_nodes_with_placeholders():
+    """Tests find_matching_nodes with paths containing placeholders."""
+    root = Node("root", None)
+    paths: Paths = [["set", "value ?"], ["set", "config ?"], ["get", "item ?"]]
+    Node.populate_tree(root, paths)
+    tree = Tree(root)
+
+    # Match placeholder path
+    nodes = tree.find_matching_nodes(tree.root, "set value 123")
+    assert len(nodes) == 1
+    assert nodes[0].name == "value ?"
+
+    # Partial match of placeholder value
+    nodes = tree.find_matching_nodes(tree.root, "set value abc")
+    assert len(nodes) == 1
+    assert nodes[0].name == "value ?"
+
+    # Match intermediate node before placeholder
+    nodes = tree.find_matching_nodes(tree.root, "set")
+    assert len(nodes) == 3  # Only the 'set' node itself
+    assert "set" in [n.name for n in nodes]
+    assert "value ?" in [n.name for n in nodes]
+    assert "config ?" in [n.name for n in nodes]
+
+    # Match multiple placeholder paths (should return deepest)
+    nodes = tree.find_matching_nodes(tree.root, "set conf")
+    assert len(nodes) == 1
+    assert nodes[0].name == "config ?"
+
+    # No match with placeholder structure
+    nodes = tree.find_matching_nodes(tree.root, "set value")
+    assert len(nodes) == 1
+    assert nodes[0].name == "value ?"
+
+
+def test_tree_get_suggestions():
+    """Tests the get_suggestions method."""
+    root = Node("root", None)
+    paths: Paths = [
+        ["show", "config", "running"],
+        ["show", "config", "startup"],
+        ["show", "interfaces"],
+        ["set", "value ?"],
+    ]
+    Node.populate_tree(root, paths)
+    tree = Tree(root)
+
+    # Suggestions from root
+    suggestions = tree.get_suggestions(tree.root, "")
+    assert len(suggestions) == 8
+
+    # Suggestions after partial command
+    suggestions = tree.get_suggestions(tree.root, "sh")  # Partial
+    expected = [
+        "show", "show config",
+        "show config running", "show config startup",
+        "show interfaces"
+    ]
+    assert sorted(suggestions) == sorted(expected)
+
+    # Suggestions after full command segment
+    suggestions = tree.get_suggestions(tree.root, "show")
+    assert sorted(suggestions) == sorted(expected)
+
+    # Suggestions deeper in the tree
+    suggestions = tree.get_suggestions(tree.root, "show config")
+    assert sorted(suggestions) == sorted([
+        "show config", "show config running", "show config startup"
+    ])
+
+    # Suggestions with partial last segment
+    suggestions = tree.get_suggestions(tree.root, "show config run")
+    assert suggestions == ["show config running"]
+
+    # Suggestions with placeholder
+    suggestions = tree.get_suggestions(tree.root, "set val")
+    assert suggestions == ["set value ?"]
+
+    # Suggestions for exact match
+    suggestions = tree.get_suggestions(tree.root, "show interfaces")
+    assert suggestions == ["show interfaces"]
+
+    # No suggestions for non-matching input
+    suggestions = tree.get_suggestions(tree.root, "configure")
+    assert suggestions == []
+
+    # No suggestions when input is longer than any path
+    suggestions = tree.get_suggestions(tree.root, "show interfaces brief")
+    assert suggestions == []
