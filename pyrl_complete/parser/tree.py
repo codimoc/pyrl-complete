@@ -1,4 +1,4 @@
-from typing import List, Self
+from typing import List, Self, Optional, Dict
 from .rules import Paths
 import re
 
@@ -6,29 +6,10 @@ import re
 class Node:
     "A node in the parse tree"
 
-    def __init__(self, name: str, parent: Self):
-        self.children = {}  # name -> node map for children
+    def __init__(self, name: str, parent: Optional[Self]):
+        self.children: Dict[str, Node] = {}  # name -> node map for children
         self.name = name
         self.parent = parent
-
-    @classmethod
-    def populate_path(cls, parent: Self, path: List):
-        "Vist the tree populating from a single path"
-        # this is recursive and should complete
-        # when the entire path is consumed
-        if len(path) == 0:
-            return  # end of recursion
-        first = path[0]
-        if first not in parent.children:
-            parent.children[first] = Node(first, parent)
-        # now recurse to traverse the tree
-        cls.populate_path(parent.children[first], path[1:])
-
-    @classmethod
-    def populate_tree(cls, parent: Self, paths: Paths):
-        "Populate the entire tree from the paths"
-        for p in paths:
-            cls.populate_path(parent, p)
 
     def level(self) -> int:
         "Returns the level of the node in the tree"
@@ -71,9 +52,27 @@ class Node:
 class Tree:
     "The full parse tree represntation of the grammar"
 
-    def __init__(self, root: Node):
-        self.root = root
-        self.cache = {}  # a map from partial string input to Node
+    def __init__(self, paths: Paths):
+        self.root: Node = Node("root", None)
+        self.cache: Dict[str, List[Node]] = (
+            {}
+        )  # a map from partial string input to Node list
+        self._populate_tree_from_paths(paths)
+
+    def _populate_path(self, start_node: Node, path_segments: List[str]):
+        """
+        Populates a single path into the tree starting from start_node.
+        """
+        current_node = start_node
+        for segment in path_segments:
+            if segment not in current_node.children:
+                current_node.children[segment] = Node(segment, current_node)
+            current_node = current_node.children[segment]
+
+    def _populate_tree_from_paths(self, paths_list: Paths):
+        "Populate the entire tree from the list of paths"
+        for p in paths_list:
+            self._populate_path(self.root, p)
 
     def find_matching_nodes(self, root: Node, input: str) -> List[Node]:
         "Find a list of nodes matching the input"
