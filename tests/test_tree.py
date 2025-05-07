@@ -321,6 +321,7 @@ def test_tree_get_suggestions():
     suggestions = tree.get_suggestions("show interfaces brief")
     assert suggestions == []
 
+
 def test_tree_get_predictions():
     """Tests the get_suggestions method."""
     paths: Paths = [
@@ -366,7 +367,7 @@ def test_tree_get_predictions():
 
     # Predictions with placeholder and value
     predictions = tree.get_predictions("set value 123")
-    assert predictions == ["set value ?"]    
+    assert predictions == ["set value ?"]
 
     # Predictions for exact match
     predictions = tree.get_predictions("show interfaces")

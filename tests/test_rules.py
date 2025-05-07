@@ -140,7 +140,7 @@ def test_merge_empty():
     assert merge([], [["b"]]) == [["b"]]
     assert merge(None, [["b"]]) == [["b"]]
     assert merge([["a"]], None) == [["a"]]
-    assert merge(None, None) == None  # Based on current implementation
+    assert merge(None, None) is None  # Based on current implementation
 
 
 def test_merge_simple():

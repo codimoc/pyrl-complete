@@ -87,7 +87,6 @@ class Tree:
         for n in root.children.values():
             nodes.extend(self.find_matching_nodes(input, n))
         # only at root level
-        # now filter nodes based on the depth, we only keep the deepest
         if root.level() == 0:
             self.cache[input] = nodes
         return nodes
