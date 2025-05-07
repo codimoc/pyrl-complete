@@ -193,29 +193,29 @@ def test_tree_find_matching_nodes_simple():
     tree = Tree(paths)
 
     # Exact match
-    nodes = tree.find_matching_nodes(tree.root, "get status")
+    nodes = tree.find_matching_nodes("get status")
     assert len(nodes) == 1
     assert nodes[0].name == "status"
     assert nodes[0].parent.name == "get"
 
     # Partial match (deepest node)
-    nodes = tree.find_matching_nodes(tree.root, "get stat")
+    nodes = tree.find_matching_nodes("get stat")
     assert len(nodes) == 1
     assert nodes[0].name == "status"
 
     # Match intermediate node
-    nodes = tree.find_matching_nodes(tree.root, "get")
+    nodes = tree.find_matching_nodes("get")
     assert len(nodes) == 3
     assert "get" in [n.name for n in nodes]
     assert "status" in [n.name for n in nodes]
     assert "config" in [n.name for n in nodes]
 
     # No match
-    nodes = tree.find_matching_nodes(tree.root, "post data")
+    nodes = tree.find_matching_nodes("post data")
     assert len(nodes) == 0
 
     # Match root
-    nodes = tree.find_matching_nodes(tree.root, "")
+    nodes = tree.find_matching_nodes("")
     assert len(nodes) == 6
     assert "get" in [n.name for n in nodes]
     assert "set" in [n.name for n in nodes]
@@ -229,7 +229,7 @@ def test_tree_find_matching_nodes_simple():
     assert "get stat" in tree.cache
     assert "get" in tree.cache
     assert "" in tree.cache
-    nodes_cached = tree.find_matching_nodes(tree.root, "get status")
+    nodes_cached = tree.find_matching_nodes("get status")
     assert len(nodes_cached) == 1
 
 
@@ -239,29 +239,29 @@ def test_tree_find_matching_nodes_with_placeholders():
     tree = Tree(paths)
 
     # Match placeholder path
-    nodes = tree.find_matching_nodes(tree.root, "set value 123")
+    nodes = tree.find_matching_nodes("set value 123")
     assert len(nodes) == 1
     assert nodes[0].name == "value ?"
 
     # Partial match of placeholder value
-    nodes = tree.find_matching_nodes(tree.root, "set value abc")
+    nodes = tree.find_matching_nodes("set value abc")
     assert len(nodes) == 1
     assert nodes[0].name == "value ?"
 
     # Match intermediate node before placeholder
-    nodes = tree.find_matching_nodes(tree.root, "set")
+    nodes = tree.find_matching_nodes("set")
     assert len(nodes) == 3  # Only the 'set' node itself
     assert "set" in [n.name for n in nodes]
     assert "value ?" in [n.name for n in nodes]
     assert "config ?" in [n.name for n in nodes]
 
     # Match multiple placeholder paths (should return deepest)
-    nodes = tree.find_matching_nodes(tree.root, "set conf")
+    nodes = tree.find_matching_nodes("set conf")
     assert len(nodes) == 1
     assert nodes[0].name == "config ?"
 
     # No match with placeholder structure
-    nodes = tree.find_matching_nodes(tree.root, "set value")
+    nodes = tree.find_matching_nodes("set value")
     assert len(nodes) == 1
     assert nodes[0].name == "value ?"
 
@@ -277,11 +277,11 @@ def test_tree_get_suggestions():
     tree = Tree(paths)
 
     # Suggestions from root
-    suggestions = tree.get_suggestions(tree.root, "")
+    suggestions = tree.get_suggestions("")
     assert len(suggestions) == 8
 
     # Suggestions after partial command
-    suggestions = tree.get_suggestions(tree.root, "sh")  # Partial
+    suggestions = tree.get_suggestions("sh")  # Partial
     expected = [
         "show",
         "show config",
@@ -292,31 +292,90 @@ def test_tree_get_suggestions():
     assert sorted(suggestions) == sorted(expected)
 
     # Suggestions after full command segment
-    suggestions = tree.get_suggestions(tree.root, "show")
+    suggestions = tree.get_suggestions("show")
     assert sorted(suggestions) == sorted(expected)
 
     # Suggestions deeper in the tree
-    suggestions = tree.get_suggestions(tree.root, "show config")
+    suggestions = tree.get_suggestions("show config")
     assert sorted(suggestions) == sorted(
         ["show config", "show config running", "show config startup"]
     )
 
     # Suggestions with partial last segment
-    suggestions = tree.get_suggestions(tree.root, "show config run")
+    suggestions = tree.get_suggestions("show config run")
     assert suggestions == ["show config running"]
 
     # Suggestions with placeholder
-    suggestions = tree.get_suggestions(tree.root, "set val")
+    suggestions = tree.get_suggestions("set val")
     assert suggestions == ["set value ?"]
 
     # Suggestions for exact match
-    suggestions = tree.get_suggestions(tree.root, "show interfaces")
+    suggestions = tree.get_suggestions("show interfaces")
     assert suggestions == ["show interfaces"]
 
     # No suggestions for non-matching input
-    suggestions = tree.get_suggestions(tree.root, "configure")
+    suggestions = tree.get_suggestions("configure")
     assert suggestions == []
 
     # No suggestions when input is longer than any path
-    suggestions = tree.get_suggestions(tree.root, "show interfaces brief")
+    suggestions = tree.get_suggestions("show interfaces brief")
     assert suggestions == []
+
+def test_tree_get_predictions():
+    """Tests the get_suggestions method."""
+    paths: Paths = [
+        ["show", "config", "running"],
+        ["show", "config", "startup"],
+        ["show", "interfaces"],
+        ["set", "value ?"],
+    ]
+    tree = Tree(paths)
+
+    # Predictions from root
+    predictions = tree.get_predictions("")
+    assert sorted(predictions) == [
+        "set", "show"
+    ]
+
+    # Predictions after partial command
+    predictions = tree.get_predictions("sh")  # Partial
+    assert predictions == ["show"]
+
+    # Predictions after full command segment
+    predictions = tree.get_predictions("show")
+    assert predictions == ["show"]
+
+    # Predictions after full command segment + space
+    predictions = tree.get_predictions("show ")
+    assert sorted(predictions) == [
+        "show config",
+        "show interfaces",
+    ]
+
+    # Predictions deeper in the tree
+    predictions = tree.get_predictions("show config")
+    assert predictions == ["show config"]
+
+    # Predictions with partial last segment
+    predictions = tree.get_predictions("show config run")
+    assert predictions == ["show config running"]
+
+    # Predictions with placeholder
+    predictions = tree.get_predictions("set val")
+    assert predictions == ["set value ?"]
+
+    # Predictions with placeholder and value
+    predictions = tree.get_predictions("set value 123")
+    assert predictions == ["set value ?"]    
+
+    # Predictions for exact match
+    predictions = tree.get_predictions("show interfaces")
+    assert predictions == ["show interfaces"]
+
+    # No predictions for non-matching input
+    predictions = tree.get_predictions("configure")
+    assert predictions == []
+
+    # No predictions when input is longer than any path
+    predictions = tree.get_predictions("show interfaces brief")
+    assert predictions == []

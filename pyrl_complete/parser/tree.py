@@ -74,8 +74,10 @@ class Tree:
         for p in paths_list:
             self._populate_path(self.root, p)
 
-    def find_matching_nodes(self, root: Node, input: str) -> List[Node]:
+    def find_matching_nodes(self, input: str, root: Node = None) -> List[Node]:
         "Find a list of nodes matching the input"
+        if root is None:
+            root = self.root
         # only use the cache at the root of the tree
         if root.level() == 0 and input in self.cache:
             return self.cache[input]
@@ -83,17 +85,35 @@ class Tree:
         if root.matches(input):
             nodes.append(root)
         for n in root.children.values():
-            nodes.extend(self.find_matching_nodes(n, input))
+            nodes.extend(self.find_matching_nodes(input, n))
         # only at root level
         # now filter nodes based on the depth, we only keep the deepest
         if root.level() == 0:
             self.cache[input] = nodes
         return nodes
 
-    def get_suggestions(self, root: Node, input: str) -> List[str]:
+    def get_suggestions(self, input: str, root: Node = None) -> List[str]:
         "Returns a list of suggestions based on the input"
-        nodes = self.find_matching_nodes(root, input)
+        if root is None:
+            root = self.root
+        nodes = self.find_matching_nodes(input, root)
         suggestions = []
         for n in nodes:
             suggestions.append(n.expression())
         return suggestions
+
+    def get_predictions(self, input: str, root: Node = None) -> List[str]:
+        "Returns a list of predictions based on the input"
+        if root is None:
+            root = self.root
+        nodes = self.find_matching_nodes(input, root)
+        nodes = [n for n in nodes if n.name != "root"]
+        min_level = 10000
+        for n in nodes:
+            if n.level() < min_level:
+                min_level = n.level()
+        nodes = [n for n in nodes if n.level() == min_level]
+        predictions = []
+        for n in nodes:
+            predictions.append(n.expression())
+        return predictions
