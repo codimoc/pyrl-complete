@@ -111,6 +111,16 @@ def test_option_with_arg(my_parser: Parser):
     my_parser.parse("get -d ?? -a ??;")
     assert len(my_parser.paths) == 1
     assert ["get", "-d ?", "-a ?"] in my_parser.paths
+    # now an option of lenght 2
+    my_parser.parse("get -ik ? -iv ?;")
+    assert len(my_parser.paths) == 1
+    assert ["get", "-ik ?", "-iv ?"] in my_parser.paths
+
+
+def test_three_letter_option_with_arg(my_parser: Parser):
+    my_parser.parse("get -abc ? -def ?;")
+    assert len(my_parser.paths) == 1
+    assert ["get", "-abc ?", "-def ?"] in my_parser.paths
 
 
 def test_options_with_and_without_arg(my_parser: Parser):
@@ -130,6 +140,13 @@ def test_multi_lines(my_parser: Parser):
     my_parser.parse(data)
     assert len(my_parser.paths) == 13
 
+
+def test_two_lines_with_statement_endings(my_parser: Parser):
+    data = """test | zero;
+            get zero (one | (two | three) );
+        """
+    my_parser.parse(data)
+    assert len(my_parser.paths) == 5
 
 # --- Tests for merge function ---
 

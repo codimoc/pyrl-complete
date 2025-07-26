@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.scrolledtext as st
 from tkinter import filedialog, ttk
 from pyrl_complete.apps import _context
+from pyrl_complete.parser import Parser
 
 
 def create_notebook(parent):
@@ -73,12 +74,24 @@ def create_button_panel_write_frame(frame):
     button_frame.rowconfigure(0, weight=1)
     button_frame.columnconfigure(0, weight=1)
     button_frame.columnconfigure(1, weight=1)
+    button_frame.columnconfigure(2, weight=1)
 
     save_rules_button = ttk.Button(
         button_frame, text="Save Rules",
         command=lambda: handle_save_rules()
     )
     save_rules_button.grid(row=0, column=0, sticky="nsew")
+    parse_rules_button = ttk.Button(
+        button_frame, text="Parse Rules",
+        command=lambda: handle_parse_rules()
+    )
+    parse_rules_button.grid(row=0, column=1, sticky="nsew")
+
+    paths_label = tk.Label(
+        button_frame, text="0 paths generated", fg="red"
+    )
+    paths_label.grid(row=0, column=2, sticky="nsew", padx=5)
+    _context["paths_label"] = paths_label
 
     return button_frame
 
@@ -104,8 +117,9 @@ def handle_save_rules():
 def handle_load_rules():
     rules_editor = _context["rules_editor"]
     log_content = _context["log_content"]
+    paths_label = _context["paths_label"]
     file_path = filedialog.askopenfilename(
-        filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        filetypes=[("Text files", "*.prl"), ("All files", "*.*")]
     )
     if file_path:
         with open(file_path, "r") as file:
@@ -114,6 +128,7 @@ def handle_load_rules():
         rules_editor.insert(tk.END, rules_text)
         log_content.insert(tk.END, f"Rules loaded from {file_path}")
         log_content.yview_moveto(1)
+        paths_label.config(text="0 paths generated", fg="red")
         # also switch to the write tab
         notebook = _context["notebook"]
         notebook.select(1)
@@ -125,3 +140,24 @@ def handle_write_rules():
     log_content.insert(tk.END, "Writing rules...")
     log_content.yview_moveto(1)
     notebook.select(1)  # Select the "Write Rules" tab (index 1)
+
+
+def handle_parse_rules():
+    log_content = _context["log_content"]
+    paths_label = _context["paths_label"]
+    log_content.insert(tk.END, "Parsing rules...")
+    log_content.yview_moveto(1)
+    if "parser" not in _context:        
+        _context["parser"] = Parser()
+    parser = _context["parser"]
+    rules_editor = _context["rules_editor"]
+    rules_text = rules_editor.get("1.0", tk.END)
+    parser.parse(rules_text)  # Assuming parser.parse() takes the rules text
+    num_paths = len(parser.paths)
+    log_content.insert(tk.END,
+                       f"Rules parsed successfully: generated found "
+                       f"{num_paths} paths from rules.")
+    log_content.yview_moveto(1)
+    paths_label.config(text=f"{num_paths} paths generated", fg="green")
+
+

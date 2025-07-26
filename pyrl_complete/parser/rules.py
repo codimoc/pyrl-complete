@@ -44,7 +44,7 @@ tokens = (
     "EOL",
     "LSB",
     "RSB",
-    "EOS",  # end of statment separattor
+    "EOS",  # end of statment separator
 )
 
 # Regular expression rules for simple tokens
@@ -63,10 +63,10 @@ def t_WORD(t):
 
 
 def t_OPTION(t):
-    r"-[a-zA-Z]{1}(\s*\?+)?"  # an optional argument like: -d ?
+    r"-[a-zA-Z]+(\s*\?+)?"  # an optional argument like: -d ? or -abc ?
     token = re.sub(r"\?+", "?", t.value)  # remove redundant ?
     # now format with one space between option letter and ?
-    token = re.sub(r"(-[a-zA-Z]{1})\s*(\?+)", "\\1 \\2", token)
+    token = re.sub(r"(-[a-zA-Z]+)\s*(\?+)", r"\1 \2", token)
     t.value = [[token]]
     return t
 
@@ -102,6 +102,7 @@ def p_all(p):
 def p_line(p):
     """line : path EOL
     | path EOS
+    | path EOS EOL
     """
     if len(p) > 1:
         for pt in p[1]:

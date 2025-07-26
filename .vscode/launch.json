@@ -1,0 +1,16 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug tester app from poetry",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "~/venv/py311/bin/poetry",
+            "args": ["run","python","${workspaceFolder}/pyrl_complete/apps/tester.py"],
+            "console": "integratedTerminal"
+        },
+    ]
+}
