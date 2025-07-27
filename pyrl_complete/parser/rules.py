@@ -57,7 +57,7 @@ t_EOS = r";"
 
 
 def t_WORD(t):
-    r"[a-zA-Z]+"  # a simple ford like: set
+    r"[a-zA-Z_]+"  # a simple ford like: set
     t.value = [[t.value]]  # the value of the token is now a Paths object
     return t  # t is a token, its value is a Paths object
 
