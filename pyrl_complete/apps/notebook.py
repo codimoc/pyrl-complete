@@ -3,6 +3,7 @@ import tkinter.scrolledtext as st
 from tkinter import filedialog, ttk
 from pyrl_complete.apps import _context
 from pyrl_complete.parser import Parser
+from pyrl_complete.parser.tree import Tree
 
 
 def create_notebook(parent):
@@ -40,7 +41,7 @@ def create_test_tab(notebook):
     test_inner_frame_top.grid(row=0, column=0, sticky="nsew")
     # this is for a lablel containg a read-only version
     # of the rules
-    test_inner_frame_top.columnconfigure(0, weight=3)
+    test_inner_frame_top.columnconfigure(0, weight=1)
     # this for a list of predictions
     test_inner_frame_top.columnconfigure(1, weight=1)
     label_rules = tk.Label(test_inner_frame_top, text="Rules")
@@ -52,7 +53,9 @@ def create_test_tab(notebook):
         bg="lightyellow",
         padx=5,
         wrap=tk.WORD,
-        height=5
+        height=5,
+        width=50
+
     )
     test_rules.grid(row=1, column=0, sticky="nsew")
     test_rules.config(state=tk.DISABLED)  # make it read-only
@@ -64,7 +67,8 @@ def create_test_tab(notebook):
     label_input = tk.Label(test_tab, text="Command line input")
     label_input.grid(row=2, column=0, sticky="nsew")
     text_input = tk.Entry(test_tab)
-    _context
+    text_input.bind('<KeyRelease>', input_changed)
+    _context["text_input"] = text_input
     text_input.grid(row=3, column=0, sticky="nsew")
 
     return test_tab
@@ -203,6 +207,7 @@ def handle_parse_rules():
     rules_editor = _context["rules_editor"]
     rules_text = rules_editor.get("1.0", tk.END)
     parser.parse(rules_text)  # Assuming parser.parse() takes the rules text
+    _context["tree"] = Tree(parser.paths)
     num_paths = len(parser.paths)
     log_content.insert(tk.END,
                        f"Rules parsed successfully: generated "
@@ -214,4 +219,17 @@ def handle_parse_rules():
     test_rules.config(state=tk.DISABLED)
     write_paths_label.config(text=f"{num_paths} paths generated", fg="green")
     test_paths_label.config(text=f"{num_paths} paths generated", fg="green")
+
+
+def input_changed(event):
+    predictions = []
+    if "tree" in _context:
+        tree = _context["tree"]
+        predictions = tree.get_predictions(event.widget.get())
+    test_predictions = _context["test_predictions"] 
+    test_predictions.delete(0, tk.END)
+    for prediction in predictions:
+        test_predictions.insert(tk.END, prediction)
+    test_predictions.yview_moveto(1)
+
 

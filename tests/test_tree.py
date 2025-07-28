@@ -120,6 +120,27 @@ def test_matches_multiple_placeholders():
                             ), "extra spaces match"
 
 
+def test_matches_multiple_placeholders_with_optiomn_hyphen():
+    """Test matching with multiple placeholders, with an option hyphen (-)"""
+    paths: Paths = [["secret_wallet", "get", "-d ?", "-a ?", "end"]]
+    tree = Tree(paths)
+    root = tree.root
+    node_secret_wallet = root.children["secret_wallet"]
+    node_get = node_secret_wallet.children["get"]
+    node_arg1 = node_get.children["-d ?"]
+    node_arg2 = node_arg1.children["-a ?"]
+    assert node_arg2.expression() == "secret_wallet get -d ? -a ?"
+    assert node_arg2.matches("secret_wallet get -d val1 -a val2")
+    assert node_arg2.matches("secret_wallet get -d val1 -a ")
+    # the following does not match because the end space is ignored
+    assert not node_arg2.matches("secret_wallet get -d val1 ")
+    assert node_arg1.matches("secret_wallet get -d val1 ")
+
+
+    
+
+
+
 def test_node_level():
     """Tests the level method of a Node."""
     paths: Paths = [
@@ -322,6 +343,33 @@ def test_tree_get_suggestions():
     assert suggestions == []
 
 
+def test_tree_suggestions_with_options_with_placeholders():
+    "Testing suggestions past the fitst opion parameter with placeholder"
+    paths: Paths = [
+        ["show", "one ?"],
+        ["show", "one ?", "two ?"],
+        ["show", "config", "startup"],
+    ]
+    tree = Tree(paths)
+    suggestions = tree.get_suggestions("show one")
+    assert sorted(suggestions) == [
+        "show one ?",
+        "show one ? two ?"
+    ]
+    suggestions = tree.get_suggestions("show one domain")
+    assert sorted(suggestions) == [
+        "show one ?",
+        "show one ? two ?"
+    ]
+
+    suggestions = tree.get_suggestions("show one domain t")
+    assert sorted(suggestions) == [
+        "show one ? two ?"
+    ]
+
+
+
+
 def test_tree_get_predictions():
     """Tests the get_suggestions method."""
     paths: Paths = [
@@ -380,3 +428,36 @@ def test_tree_get_predictions():
     # No predictions when input is longer than any path
     predictions = tree.get_predictions("show interfaces brief")
     assert predictions == []
+
+
+def test_tree_get_prediction_with_options_with_placeholders():
+    "Testing predictions past the fitst opion parameter with placeholder"
+    paths: Paths = [
+        ["show", "one ?"],
+        ["show", "one ?", "two ?"],
+        ["show", "config", "startup"],
+    ]
+    tree = Tree(paths)
+
+    # before the first token
+    predictions = tree.get_predictions("sh")  # Partial
+    assert predictions == ["show"]
+
+    # between first and second token
+    predictions = tree.get_predictions("show ")
+    assert sorted(predictions) == [
+        "show config",
+        "show one ?"
+    ]
+
+    # in the second token
+    predictions = tree.get_predictions("show on")
+    assert predictions == ["show one ?"]
+    predictions = tree.get_predictions("show one domain")
+    assert predictions == ["show one ?"]
+
+    # after the second token
+    predictions = tree.get_predictions("show one domain t")
+    assert predictions == ["show one ? two ?"]
+    predictions = tree.get_predictions("show one domain two access")
+    assert predictions == ["show one ? two ?"]
