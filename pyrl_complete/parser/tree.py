@@ -1,5 +1,6 @@
 from typing import List, Self, Optional, Dict
 from .rules import Paths
+from ..common.string_utils import find_all_char_positions, remove_first_word
 import re
 
 
@@ -31,23 +32,25 @@ class Node:
     def matches(self, input: str) -> bool:
         exp = self.expression()
         if "?" not in exp:
-            return exp.startswith(input)
-        if exp.endswith("?"):
-            exp += " "  # to facilitate the split
-        tokens = exp.split(" ? ")
-        # now remove empty tokens
-        tokens = [t for t in tokens if len(t) > 0]
-        # remove extra spaces in input and transform into lower case
-        input = re.sub(r"\s+", " ", input.lower().strip())
-        for t in tokens:
-            if not t.strip().startswith(input[: len(t)]):
-                return False
-            # now remove the part including ? from input
-            input = re.sub(rf"^{t}\s+\w+\s+", "", input)
-        # input should be completely consumed by all tokens
+            return exp.startswith(input.lower())
+        # remove double spaces from input
+        input = re.sub(r"\s+", " ", input)
+        # find position of '?' in exp
+        placeholders = find_all_char_positions(exp, "?")
+        if len(placeholders) == 0:
+            return False
 
-        return True
+        while len(placeholders) > 0:
+            p = placeholders[0]
+            input = remove_first_word(input, p)
+            exp = exp[:p] + exp[p + 1:]
+            placeholders = find_all_char_positions(exp, "?")
 
+        # remove double spaces from exp
+        exp = re.sub(r"\s+", " ", exp)
+        input = re.sub(r"\s+", " ", input)      
+        return exp.startswith(input.lower())
+    
 
 class Tree:
     "The full parse tree represntation of the grammar"
@@ -96,10 +99,7 @@ class Tree:
         if root is None:
             root = self.root
         nodes = self.find_matching_nodes(input, root)
-        suggestions = []
-        for n in nodes:
-            suggestions.append(n.expression())
-        return suggestions
+        return [n.expression() for n in nodes]
 
     def get_predictions(self, input: str, root: Node = None) -> List[str]:
         "Returns a list of predictions based on the input"
@@ -112,7 +112,4 @@ class Tree:
             if n.level() < min_level:
                 min_level = n.level()
         nodes = [n for n in nodes if n.level() == min_level]
-        predictions = []
-        for n in nodes:
-            predictions.append(n.expression())
-        return predictions
+        return [n.expression() for n in nodes]

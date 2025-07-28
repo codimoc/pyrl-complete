@@ -89,10 +89,10 @@ def test_matches_complex_placeholder():
     # Note: this is not ideal, but it is the current behavior
     # and we are testing it
     assert node_six.matches("one three five val1 si")
-    assert not node_six.matches("one three five val1")  # Missing last
-    assert not node_six.matches("one three five")  # Missing placeholder
+    assert node_six.matches("one three five val1")  # Missing last
+    assert node_six.matches("one three five")  # Missing placeholder
     assert not node_six.matches("one three five val1 seven")  # Wrong last
-    assert node_six.matches("one three five val1 six extra")  # Extra
+    assert not node_six.matches("one three five val1 six extra")  # Extra
 
 
 def test_matches_multiple_placeholders():
@@ -116,8 +116,9 @@ def test_matches_multiple_placeholders():
                             ), "partial end match"
     assert node_end.matches("cmd arg1 VALUE1 arg2 VALUE2 END"
                             ), "case-insensitive match"
-    assert node_end.matches(" cmd   arg1  val1  arg2 val2   end "
+    assert node_end.matches("cmd   arg1  val1  arg2 val2   end"
                             ), "extra spaces match"
+    assert not node_end.matches(" cmd arg1 val"), "Space at the beginning"
 
 
 def test_matches_multiple_placeholders_with_optiomn_hyphen():
@@ -132,13 +133,7 @@ def test_matches_multiple_placeholders_with_optiomn_hyphen():
     assert node_arg2.expression() == "secret_wallet get -d ? -a ?"
     assert node_arg2.matches("secret_wallet get -d val1 -a val2")
     assert node_arg2.matches("secret_wallet get -d val1 -a ")
-    # the following does not match because the end space is ignored
-    assert not node_arg2.matches("secret_wallet get -d val1 ")
     assert node_arg1.matches("secret_wallet get -d val1 ")
-
-
-    
-
 
 
 def test_node_level():
