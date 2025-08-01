@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.scrolledtext as st
 from tkinter import filedialog, ttk
 from pyrl_complete.apps import _context
+from pyrl_complete.common.string_utils import fill_placeholders_with_words
 from pyrl_complete.parser import Parser
 from pyrl_complete.parser.tree import Tree
 
@@ -223,13 +224,15 @@ def handle_parse_rules():
 
 def input_changed(event):
     predictions = []
+    input = event.widget.get()
     if "tree" in _context:
         tree = _context["tree"]
-        predictions = tree.get_predictions(event.widget.get())
+        predictions = tree.get_predictions(input)
     test_predictions = _context["test_predictions"] 
     test_predictions.delete(0, tk.END)
     for prediction in predictions:
-        test_predictions.insert(tk.END, prediction)
+        modified_prediction = fill_placeholders_with_words(prediction, input)
+        test_predictions.insert(tk.END, modified_prediction)
     test_predictions.yview_moveto(1)
 
 

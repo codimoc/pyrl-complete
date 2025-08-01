@@ -3,6 +3,7 @@ from pyrl_complete.common.string_utils import (
     find_all_char_positions,
     is_word_char,
     remove_first_word,
+    fill_placeholders_with_words,
 )
 
 
@@ -112,3 +113,49 @@ def test_remove_first_word_only_one_word():
 def test_find_all_char_positions(text, char_to_find, expected):
     """Tests find_all_char_positions with various inputs."""
     assert find_all_char_positions(text, char_to_find) == expected
+
+
+# --- Tests for fill_placeholders_with_words ---
+
+
+@pytest.mark.parametrize(
+    "prediction, input_str, expected",
+    [
+        # Basic cases with one or more placeholders
+        (
+            "set value ? for user ?",
+            "set value 123 for user admin",
+            "set value 123 for user admin",
+        ),
+        ("get item ?", "get item abc_123", "get item abc_123"),
+        # No placeholders in prediction
+        ("hello world", "this input is ignored", "hello world"),
+        # Empty strings
+        ("", "", ""),
+        ("?", "", "?"),  # Cannot fill from empty input, should remain
+        ("", "some word", ""),  # No placeholders to fill
+        # Placeholders at start or end
+        ("? world", "hello world", "hello world"),
+        ("hello ?", "hello world", "hello world"),
+        # Not enough words in input to fill all placeholders
+        ("a ? b ? c", "a word1 b", "a word1 b ? c"),
+        ("? ? ?", "one two", "one two ?"),
+        # Input has extra words; they are ignored because matching is positional
+        ("get ?", "get value from table", "get value"),
+        # A placeholder that cannot be filled because no word is found at its position
+        ("command --option ?", "command --option", "command --option ?"),
+        # Word in input is shorter than the word it replaces (not really, it replaces '?')
+        ("replace ? placeholder", "replace a placeholder", "replace a placeholder"),
+        # Word in input is longer, causing the string to grow
+        (
+            "replace ? placeholder",
+            "replace very_long_word placeholder",
+            "replace very_long_word placeholder",
+        ),
+        # Multiple placeholders, but input string ends before the last one
+        ("first ? second ? third ?", "first one second", "first one second ? third ?"),
+    ],
+)
+def test_fill_placeholders_with_words(prediction, input_str, expected):
+    """Tests fill_placeholders_with_words with various scenarios."""
+    assert fill_placeholders_with_words(prediction, input_str) == expected
