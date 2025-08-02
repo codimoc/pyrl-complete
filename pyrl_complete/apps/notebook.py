@@ -8,6 +8,17 @@ from pyrl_complete.parser.tree import Tree
 
 
 def create_notebook(parent):
+    """Creates the main ttk.Notebook widget for the application.
+
+    This notebook will contain the different tabs of the UI, such as the
+    "Test Rules" and "Write Rules" tabs.
+
+    Args:
+        parent: The parent tkinter widget.
+
+    Returns:
+        The created ttk.Notebook widget.
+    """
     notebook = ttk.Notebook(parent)
     _context["notebook"] = notebook
     create_test_tab(notebook)
@@ -16,6 +27,21 @@ def create_notebook(parent):
 
 
 def create_test_tab(notebook):
+    """Creates the 'Test Rules' tab.
+
+    This tab is the main interface for testing the command-line completion.
+    It includes:
+    - A read-only view of the currently parsed rules.
+    - A listbox to display real-time predictions.
+    - An entry widget for typing commands.
+    - Buttons to load or switch to the rule writing view.
+
+    Args:
+        notebook: The parent ttk.Notebook widget.
+
+    Returns:
+        The created ttk.Frame for the test tab.
+    """
     # this is the first tab of the notebook
     test_tab = ttk.Frame(notebook, padding=(10, 10, 10, 10))
     notebook.add(test_tab, text="Test Rules")
@@ -65,10 +91,12 @@ def create_test_tab(notebook):
     test_predictions.grid(row=1, column=1, sticky="nsew")
     _context["test_predictions"] = test_predictions
     
-    label_input = tk.Label(test_tab, text="Command line input")
+    label_input = tk.Label(test_tab, text="Command line input (hit Tab to autocomplete)")
     label_input.grid(row=2, column=0, sticky="nsew")
     text_input = tk.Entry(test_tab)
+    text_input.bind('<Tab>', tab_pressed)
     text_input.bind('<KeyRelease>', input_changed)
+
     _context["text_input"] = text_input
     text_input.grid(row=3, column=0, sticky="nsew")
 
@@ -76,6 +104,17 @@ def create_test_tab(notebook):
 
 
 def create_button_panel_test_frame(frame):
+    """Creates the button panel for the 'Test Rules' tab.
+
+    This panel contains buttons for loading rules and switching to the
+    'Write Rules' tab.
+
+    Args:
+        frame: The parent widget for the button frame.
+
+    Returns:
+        The created ttk.Frame containing the buttons.
+    """
     button_frame = ttk.Frame(frame)
     button_frame.grid(row=0, column=0, sticky="nsew")
     button_frame.rowconfigure(0, weight=1)
@@ -103,6 +142,17 @@ def create_button_panel_test_frame(frame):
 
 
 def create_write_tab(notebook):
+    """Creates the 'Write Rules' tab.
+
+    This tab provides a text editor for users to write, edit, and save
+    the grammar rules in a .prl file.
+
+    Args:
+        notebook: The parent ttk.Notebook widget.
+
+    Returns:
+        The created ttk.Frame for the write tab.
+    """
     write_tab = ttk.Frame(notebook, padding=(10, 10, 10, 10))
     notebook.add(write_tab, text="Write Rules")
     # with the following the tab has one row and one column, both full weight
@@ -120,6 +170,17 @@ def create_write_tab(notebook):
 
 
 def create_button_panel_write_frame(frame):
+    """Creates the button panel for the 'Write Rules' tab.
+
+    This panel contains buttons for saving the rules to a file and for
+    parsing the rules in the editor.
+
+    Args:
+        frame: The parent widget for the button frame.
+
+    Returns:
+        The created ttk.Frame containing the buttons.
+    """
     button_frame = ttk.Frame(frame)
     button_frame.grid(row=0, column=0, sticky="nsew")
     button_frame.rowconfigure(0, weight=1)
@@ -151,6 +212,11 @@ def create_button_panel_write_frame(frame):
 
 
 def handle_save_rules():
+    """Handles the 'Save Rules' button click.
+
+    Opens a file dialog to let the user choose a location to save the
+    contents of the rule editor.
+    """
     rules_editor = _context["rules_editor"]
     log_content = _context["log_content"]
     rules_text = rules_editor.get("1.0", tk.END)
@@ -166,6 +232,12 @@ def handle_save_rules():
 
 
 def handle_load_rules():
+    """Handles the 'Load Rules' button click.
+
+    Opens a file dialog to let the user select a .prl file. The content
+    of the file is loaded into the rule editor, and the view switches to the
+    'Write Rules' tab.
+    """
     rules_editor = _context["rules_editor"]
     log_content = _context["log_content"]
     write_paths_label = _context["write_paths_label"]
@@ -188,6 +260,10 @@ def handle_load_rules():
 
 
 def handle_write_rules():
+    """Handles the 'Write Rules' button click.
+
+    Switches the notebook view to the 'Write Rules' tab.
+    """
     log_content = _context["log_content"]
     notebook = _context["notebook"]
     log_content.insert(tk.END, "Writing rules...")
@@ -196,6 +272,12 @@ def handle_write_rules():
 
 
 def handle_parse_rules():
+    """Handles the 'Parse Rules' button click.
+
+    Takes the text from the rule editor, parses it to generate command paths,
+    builds a completion tree, and updates the UI to reflect the newly parsed
+    rules. It then switches to the 'Test Rules' tab.
+    """
     log_content = _context["log_content"]
     write_paths_label = _context["write_paths_label"]
     test_paths_label = _context["test_paths_label"]
@@ -220,9 +302,34 @@ def handle_parse_rules():
     test_rules.config(state=tk.DISABLED)
     write_paths_label.config(text=f"{num_paths} paths generated", fg="green")
     test_paths_label.config(text=f"{num_paths} paths generated", fg="green")
+    notebook = _context["notebook"]
+    notebook.select(0)  # Select the "Test Rules" tab (index 1)
 
 
 def input_changed(event):
+    """Handles the <KeyRelease> event for the command input field.
+
+    On every key release, this function:
+    1. Resets the Tab-completion cycle.
+    2. Gets the current text from the input field.
+    3. Queries the completion tree for predictions based on the input.
+    4. Fills any placeholders in the predictions with corresponding words
+       from the input.
+    5. Updates the predictions listbox with the results.
+
+    Args:
+        event: The tkinter event object.
+    """
+
+    # Reset prediction cycle on any input change
+    log_content = _context["log_content"]
+    key = event.keysym
+    if key != 'Tab':
+        _context["prediction_index"] = -1
+    else:
+        return
+
+    # fill the prediction box
     predictions = []
     input = event.widget.get()
     if "tree" in _context:
@@ -233,6 +340,39 @@ def input_changed(event):
     for prediction in predictions:
         modified_prediction = fill_placeholders_with_words(prediction, input)
         test_predictions.insert(tk.END, modified_prediction)
+    log_content.insert(tk.END, "Updated predictions.")
     test_predictions.yview_moveto(1)
 
 
+def tab_pressed(event):
+    """Handles the Tab key press for autocompletion.
+
+    When Tab is pressed, this function cycles through the available predictions
+    and populates the input field with the selected one. Each subsequent press
+    of Tab moves to the next prediction in the list, wrapping around to the
+    start if necessary.
+
+    The prediction cycle is reset whenever the input text is modified.
+
+    Returning "break" is crucial to prevent tkinter's default Tab behavior,
+    which would otherwise move the focus to the next widget in the tab order.
+    """
+    log_content = _context["log_content"]
+    text_input = _context["text_input"]
+    test_predictions = _context["test_predictions"]
+    predictions = test_predictions.get(0, tk.END)
+    if not predictions:
+        return "break"
+
+    if "prediction_index" not in _context:
+        _context["prediction_index"] = -1
+
+    _context["prediction_index"] = \
+        (_context["prediction_index"] + 1) % len(predictions)
+    completion = predictions[_context["prediction_index"]]
+    text_input.delete(0, tk.END)
+    text_input.insert(0, completion)
+    log_content.insert(tk.END, f"Completed with: '{completion}'")
+    # Set focus back to the text input widget to allow continued typing.
+    text_input.focus_set()
+    return "break"
