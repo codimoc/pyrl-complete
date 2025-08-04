@@ -195,3 +195,11 @@ The application is organized into two main tabs and a log panel.
     *   **Command line input**: The field where you type commands and use Tab completion.
 
 *   **Log Activity Panel**: Located at the bottom of the window, this panel shows a running log of actions like loading files, parsing rules, and which completion was selected, which is useful for debugging.
+
+## Dependencies
+
+`pyrl-complete` has one core external dependency:
+
+-   **ply**: Used for the Lex/Yacc-style parsing of the custom grammar rules.
+
+The included Tester GUI application uses **Tkinter**, which is part of the Python standard library and does not require a separate installation.
