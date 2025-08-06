@@ -202,4 +202,8 @@ The application is organized into two main tabs and a log panel.
 
 -   **ply**: Used for the Lex/Yacc-style parsing of the custom grammar rules.
 
-The included Tester GUI application uses **Tkinter**, which is part of the Python standard library and does not require a separate installation.
+The included Tester GUI application uses **Tkinter**, which is part of the Python standard library and should not require a separate installation. However on some linux systems a separate installation is required via the package mager, for example 
+```
+sudo apt install python3-tk 
+```
+for Debian/Ubuntu.
