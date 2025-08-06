@@ -1,3 +1,5 @@
+# Copyright (C) 2025 codimoc, codimoc@prismoid.uk
+
 import tkinter as tk
 import tkinter.scrolledtext as st
 from tkinter import filedialog, ttk

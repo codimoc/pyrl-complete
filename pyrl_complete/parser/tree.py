@@ -1,3 +1,5 @@
+# Copyright (C) 2025 codimoc, codimoc@prismoid.uk
+
 from typing import List, Self, Optional, Dict
 from .rules import Paths
 from ..common.string_utils import find_all_char_positions, remove_first_word

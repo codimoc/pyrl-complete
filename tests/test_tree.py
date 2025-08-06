@@ -1,3 +1,5 @@
+# Copyright (C) 2025 codimoc, codimoc@prismoid.uk
+
 from pyrl_complete.parser import Node, Tree
 from pyrl_complete.parser.rules import Paths
 

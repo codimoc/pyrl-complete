@@ -1,3 +1,5 @@
+# Copyright (C) 2025 codimoc, codimoc@prismoid.uk
+
 import pytest
 from pyrl_complete.common.string_utils import (
     find_all_char_positions,

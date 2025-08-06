@@ -1,3 +1,5 @@
+# Copyright (C) 2025 codimoc, codimoc@prismoid.uk
+
 from . import rules
 from .rules import Paths
 from . import parser

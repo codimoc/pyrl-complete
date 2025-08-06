@@ -1,3 +1,5 @@
+# Copyright (C) 2025 codimoc, codimoc@prismoid.uk
+
 import tkinter as tk
 from tkinter import VERTICAL, ttk
 from pyrl_complete.apps import _context
